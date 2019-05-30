@@ -1,0 +1,16 @@
+[{
+    "id":2,
+    "type": "annotator",
+    "username":"bruegge",
+    "passwordHash":"fsfdj",
+    "campaignsOwned": [2],
+    "campaignsAllowed": [1, 2]
+},
+{
+    "id":1,
+    "type": "campaign_owner",
+    "username":"baris",
+    "passwordHash":"daffadfsafsadssa",
+    "campaignsOwned": [1],
+    "campaignsAllowed": [1, 2]
+}]
