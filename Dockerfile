@@ -7,4 +7,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-CMD [ "python3", "./setup.py" ]
+CMD [ "python3", "./use_sample_db.py" ]
