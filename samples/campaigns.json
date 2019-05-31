@@ -1,0 +1,18 @@
+[{
+    "ownerId": 1,
+    "id": 1,
+    "type": "default",
+    "name": "Fridge",
+    "description": "This is a greater campaign",
+    "dictionary": ["orange", "potato", "tomato"],
+    "userIds": [ 1, 2]
+},
+{
+    "ownerId": 2,
+    "id": 2,
+    "type": "default",
+    "name": "Kitchen",
+    "description": "This is a great campaign",
+    "dictionary": ["chair", "table", "fork"],
+    "userIds": [ 1, 2]
+}]

@@ -1,0 +1,124 @@
+[{
+    "size": 150584,
+    "filename": "MyImage1.png",
+    "campaign_id": 1,
+    "id": 1,
+    "file_attributes": {
+      "annotation_priority": 200
+    },
+    "regions": {
+      "0": {
+        "shape_attributes": {
+          "name": "polygon",
+          "all_points_x": [
+            431,
+            409,
+            580,
+            1072,
+            1174,
+            907,
+            546
+          ],
+          "all_points_y": [
+            201,
+            442,
+            765,
+            760,
+            575,
+            332,
+            287
+          ]
+        },
+        "region_attributes": {
+          "Class": "Dog"
+        },
+        "confidence": 0.9
+      },
+      "1": {
+        "shape_attributes": {
+          "name": "polygon",
+          "all_points_x": [
+            1347,
+            652,
+            1518,
+            1440
+          ],
+          "all_points_y": [
+            751,
+            875,
+            837,
+            663
+          ]
+        },
+        "region_attributes": {
+          "Class": "Bird"
+        },
+        "confidence": 0.7
+      }
+    }
+},
+{
+    "size": 150584,
+    "filename": "MyImage2.png",
+    "campaign_id": 1,
+    "id": 2,
+    "file_attributes": {
+      "annotation_priority": 200
+    },
+    "regions": {
+      "0": {
+        "shape_attributes": {
+          "name": "polygon",
+          "all_points_x": [
+            431,
+            409,
+            580,
+            1072,
+            1174,
+            907,
+            546
+          ],
+          "all_points_y": [
+            201,
+            442,
+            765,
+            760,
+            575,
+            332,
+            287
+          ]
+        },
+        "region_attributes": {
+          "Class": "Dog"
+        },
+        "confidence": 0.9
+      },
+      "1": {
+        "shape_attributes": {
+          "name": "polygon",
+          "all_points_x": [
+            1559,
+            1469,
+            1575,
+            2259,
+            2139,
+            1735,
+            1548
+          ],
+          "all_points_y": [
+            169,
+            402,
+            650,
+            551,
+            262,
+            260,
+            167
+          ]
+        },
+        "region_attributes": {
+          "Class": "Cat"
+        },
+        "confidence": 0.8
+      }
+    }
+}]
