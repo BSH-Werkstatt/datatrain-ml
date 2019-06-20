@@ -56,7 +56,7 @@ def display_images(images, titles=None, cols=4, cmap=None, norm=None,
         plt.imshow(image.astype(np.uint8), cmap=cmap,
                    norm=norm, interpolation=interpolation)
         i += 1
-    plt.show(block=False)
+    plt.show()
 
 
 def random_colors(N, bright=True):
@@ -109,21 +109,21 @@ def display_instances(image, boxes, masks, class_ids, class_names,
         assert boxes.shape[0] == masks.shape[-1] == class_ids.shape[0]
 
     # If no axis is passed, create one and automatically call show()
-    auto_show = True
+    auto_show = False #True
     if not ax:
         fig, ax = plt.subplots(1, figsize=figsize)
+        fig.subplots_adjust(0,0,1,1)
         canvas = FigureCanvas(fig)
-		
+
     # Generate random colors
     if not making_video or not real_time:
         colors = colors or random_colors(N)
     # Show area outside image boundaries.
-	
     height, width = image.shape[:2]
-    ax.set_ylim(height + 10, -10)
-    ax.set_xlim(-10, width + 10)
+    #ax.set_ylim(height + 10, -10)
+    #ax.set_xlim(-10, width + 10)
     ax.axis('off')
-    ax.set_title(title)
+    #ax.set_title(title)'''
 
     masked_image = image.astype(np.uint32).copy()
     for i in range(N):
@@ -170,7 +170,7 @@ def display_instances(image, boxes, masks, class_ids, class_names,
         mask = masks[:, :, i]
         if show_mask:
             masked_image = apply_mask(masked_image, mask, color)
-	    
+
         # Mask Polygon
         # Pad to ensure proper polygons for masks that touch image edges.
         padded_mask = np.zeros(
@@ -183,7 +183,7 @@ def display_instances(image, boxes, masks, class_ids, class_names,
             p = Polygon(verts, facecolor="none", edgecolor=color)
             ax.add_patch(p)
     ax.imshow(masked_image.astype(np.uint8))
-	if detect:
+    if detect:
         plt.close()
         return canvas
     # To transform the drawn figure into ndarray X
@@ -197,9 +197,12 @@ def display_instances(image, boxes, masks, class_ids, class_names,
         plt.close()
         return X
     elif making_image:
-        cv2.imwrite(prediction_image_filename, X)
+        #cv2.imwrite(prediction_image_filename, X)
+        plt.savefig(prediction_image_filename, bbox_inches='tight', pad_inches=0)
     if auto_show:
         plt.show()
+    plt.close('all')
+
 
 def display_differences(image,
                         gt_box, gt_class_id, gt_mask,
