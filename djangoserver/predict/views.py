@@ -24,7 +24,8 @@ def predict(request):
 @csrf_exempt
 def predictReturnFile(request):
 	if request.method == 'GET':
-		body = json.loads(request.body)
-		url = body['predictionURL']
+		#body = json.loads(request.body)
+		#url = body['predictionURL']
+		url = request.build_absolute_uri()
 		filename = url.rsplit('/', 1)[-1]
 		return FileResponse(open(filename, 'rb'))  #response
