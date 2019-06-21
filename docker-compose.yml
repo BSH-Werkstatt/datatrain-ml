@@ -7,15 +7,16 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        PORT: 5000
+        PORT: 6000
     ports:
-      - '5000:5000'
+      - '6000:6000'
     links:
       - database_dev
     depends_on:
       - database_dev
     networks:
       - docker-network
+    command: python djangoserver/manage.py runserver 0.0.0.0:5000
   database_dev:
     image: mongo
     restart: always

@@ -5,6 +5,7 @@ import sys
 
 
 def main():
+    print("Django Server File executed")
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'djangoserver.settings')
     try:
         from django.core.management import execute_from_command_line
