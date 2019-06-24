@@ -1,3 +1,5 @@
+logs
+mask_rcnn*
 get_pip.py
 
 # Byte-compiled / optimized / DLL files

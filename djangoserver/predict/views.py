@@ -14,7 +14,13 @@ def predict(request):
 		body = json.loads(request.body)
 		url = body['imageURL']
 		urlTrack = request.build_absolute_uri() # URL where request was sent
-		rcnn, class_names = m.define_model()
+
+		model_name = "mask_rcnn-" + body['campaignName'].lower().replace(" ", "_") + ".h5"
+		campaign_class_names = ['BG']
+		for class_name in body['campaignTaxonomy']:
+			campaign_class_names.append(class_name)
+
+		rcnn, class_names = m.define_model(model_name, campaign_class_names)
 		prediction, image = m.predict_img(url, rcnn)
 		randomName = str(uuid.uuid4()) + '.jpg'
 		filename = urlTrack + randomName # assign random filename to image 

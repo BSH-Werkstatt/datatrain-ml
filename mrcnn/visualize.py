@@ -183,7 +183,7 @@ def display_instances(image, boxes, masks, class_ids, class_names,
             p = Polygon(verts, facecolor="none", edgecolor=color)
             ax.add_patch(p)
     ax.imshow(masked_image.astype(np.uint8))
-	if detect:
+    if detect:
         plt.close()
         return canvas
     # To transform the drawn figure into ndarray X

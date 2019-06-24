@@ -7,6 +7,10 @@ Licensed under the MIT License (see LICENSE for details)
 Written by Waleed Abdulla
 """
 
+import cv2
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from mrcnn import utils
 import os
 import sys
 import logging
@@ -26,14 +30,11 @@ ROOT_DIR = os.path.abspath("../")
 
 # Import Mask RCNN
 sys.path.append(ROOT_DIR)  # To find local version of the library
-from mrcnn import utils
-from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
-from matplotlib.figure import Figure
-import cv2
 
-############################################################d
+# d
 #  Visualization
 ############################################################
+
 
 def display_images(images, titles=None, cols=4, cmap=None, norm=None,
                    interpolation=None):
@@ -109,10 +110,10 @@ def display_instances(image, boxes, masks, class_ids, class_names,
         assert boxes.shape[0] == masks.shape[-1] == class_ids.shape[0]
 
     # If no axis is passed, create one and automatically call show()
-    auto_show = False #True
+    auto_show = False  # True
     if not ax:
         fig, ax = plt.subplots(1, figsize=figsize)
-        fig.subplots_adjust(0,0,1,1)
+        fig.subplots_adjust(0, 0, 1, 1)
         canvas = FigureCanvas(fig)
 
     # Generate random colors
@@ -123,7 +124,7 @@ def display_instances(image, boxes, masks, class_ids, class_names,
     #ax.set_ylim(height + 10, -10)
     #ax.set_xlim(-10, width + 10)
     ax.axis('off')
-    #ax.set_title(title)'''
+    # ax.set_title(title)'''
 
     masked_image = image.astype(np.uint32).copy()
     for i in range(N):
@@ -136,7 +137,7 @@ def display_instances(image, boxes, masks, class_ids, class_names,
             #     color = colors[1]
             color = colors[class_id-1]
         elif hc:
-            #just for hard-code the mask for paper
+            # just for hard-code the mask for paper
             if class_id == 14:
                 color = colors[0]
             else:
@@ -151,8 +152,8 @@ def display_instances(image, boxes, masks, class_ids, class_names,
         y1, x1, y2, x2 = boxes[i]
         if show_bbox:
             p = patches.Rectangle((x1, y1), x2 - x1, y2 - y1, linewidth=2,
-                                alpha=0.7, linestyle="dashed",
-                                edgecolor=color, facecolor='none')
+                                  alpha=0.7, linestyle="dashed",
+                                  edgecolor=color, facecolor='none')
             ax.add_patch(p)
 
         # Label
@@ -198,7 +199,8 @@ def display_instances(image, boxes, masks, class_ids, class_names,
         return X
     elif making_image:
         #cv2.imwrite(prediction_image_filename, X)
-        plt.savefig(prediction_image_filename, bbox_inches='tight', pad_inches=0)
+        plt.savefig(prediction_image_filename,
+                    bbox_inches='tight', pad_inches=0)
     if auto_show:
         plt.show()
     plt.close('all')
@@ -218,7 +220,7 @@ def display_differences(image,
         iou_threshold=iou_threshold, score_threshold=score_threshold)
     # Ground truth = green. Predictions = red
     colors = [(0, 1, 0, .8)] * len(gt_match)\
-           + [(1, 0, 0, 1)] * len(pred_match)
+        + [(1, 0, 0, 1)] * len(pred_match)
     # Concatenate GT and predictions
     class_ids = np.concatenate([gt_class_id, pred_class_id])
     scores = np.concatenate([np.zeros([len(gt_match)]), pred_score])
@@ -229,7 +231,7 @@ def display_differences(image,
         pred_score[i],
         (overlaps[i, int(pred_match[i])]
             if pred_match[i] > -1 else overlaps[i].max()))
-            for i in range(len(pred_match))]
+        for i in range(len(pred_match))]
     # Set title if not provided
     title = title or "Ground Truth and Detections\n GT=green, pred=red, captions: score/IoU"
     # Display
