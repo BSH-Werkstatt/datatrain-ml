@@ -61,17 +61,17 @@ class SurgeryConfig(Config):
     Derives from the base Config class and overrides some values.
     """
     # Give the configuration a recognizable name
-    NAME = "surgery"
+    NAME = "fridges"
 
     # We use a GPU with 12GB memory, which can fit two images.
     # Adjust down if you use a smaller GPU.
-    IMAGES_PER_GPU = 2
+    IMAGES_PER_GPU = 1
 
     # Number of classes (including background)
-    NUM_CLASSES = 1 + 2  # Background + objects
+    NUM_CLASSES = 1 + 4  # Background + objects
 
     # Number of training steps per epoch
-    STEPS_PER_EPOCH = 100
+    STEPS_PER_EPOCH = 100 #100
 
     # Skip detections with < 90% confidence
     DETECTION_MIN_CONFIDENCE = 0.9
@@ -88,8 +88,10 @@ class SurgeryDataset(utils.Dataset):
         subset: Subset to load: train or val or predict
         """
         # Add classes. We have only one class to add.
-        self.add_class("surgery", 1, "arm")
-        self.add_class("surgery", 2, "ring")
+        self.add_class("fridges", 1, "Cauliflower")
+        self.add_class("fridges", 2, "Lettuce")
+        self.add_class("fridges", 3, "Egg carton")
+        self.add_class("fridges", 4, "Youghurt")
         if hc is True:
             for i in range(1,14):
                 self.add_class("surgery", i, "{}".format(i))
@@ -126,8 +128,8 @@ class SurgeryDataset(utils.Dataset):
             # Get the x, y coordinaets of points of the polygons that make up
             # the outline of each object instance. There are stores in the
             # shape_attributes (see json format above)
-            polygons = [r['shape_attributes'] for r in a['regions'].values()]
-            names = [r['region_attributes'] for r in a['regions'].values()]
+            polygons = [r['shape_attributes'] for r in a['regions']] #a['regions'].values()
+            names = [r['region_attributes'] for r in a['regions']] #a['regions'].values()
             # load_mask() needs the image size to convert polygons to masks.
             # Unfortunately, VIA doesn't include it in JSON, so we must read
             # the image. This is only managable since the dataset is tiny.
@@ -136,7 +138,7 @@ class SurgeryDataset(utils.Dataset):
             height, width = image.shape[:2]
 
             self.add_image(
-                "surgery",
+                "fridges",
                 image_id=a['filename'],  # use file name as a unique image id
                 path=image_path,
                 width=width, height=height,
@@ -152,7 +154,7 @@ class SurgeryDataset(utils.Dataset):
         """
         # If not a surgery dataset image, delegate to parent class.
         image_info = self.image_info[image_id]
-        if image_info["source"] != "surgery":
+        if image_info["source"] != "fridges":
             return super(self.__class__, self).load_mask(image_id)
 
         # Convert polygons to a bitmap mask of shape
@@ -170,10 +172,14 @@ class SurgeryDataset(utils.Dataset):
         # In the surgery dataset, pictures are labeled with name 'a' and 'r' representing arm and ring.
         for i, p in enumerate(class_names):
         #"name" is the attributes name decided when labeling, etc. 'region_attributes': {name:'a'}
-            if p['name'] == 'a':
+            if p['Food'] == 'Cauliflower':
                 class_ids[i] = 1
-            elif p['name'] == 'r':
+            elif p['Food'] == 'Lettuce':
                 class_ids[i] = 2
+            elif p['Food'] == 'Egg carton':
+                class_ids[i] = 3
+            elif p['Food'] == 'Youghurt':
+                class_ids[i] = 4
             #assert code here to extend to other labels
         class_ids = class_ids.astype(int)
         # Return mask, and array of class IDs of each instance. Since we have
@@ -183,7 +189,7 @@ class SurgeryDataset(utils.Dataset):
     def image_reference(self, image_id):
         """Return the path of the image."""
         info = self.image_info[image_id]
-        if info["source"] == "surgery":
+        if info["source"] == "fridges": # name of the project (e.g. surgery)
             return info["path"]
         else:
             super(self.__class__, self).image_reference(image_id)
@@ -242,11 +248,11 @@ def train(model, *dic):
     # *** This training schedu le is an example. Update to your needs ***
     # Since we're using a very small dataset, and starting from
     # COCO trained weights, we don't need to train too long. Also,
-    # no need to train all layers, just the heads should do it.
+    # no need to train all layers, just the heads should do it. (Heads are the decision layer neurons)
     print("Training network heads")
     model.train(dataset_train, dataset_val,
                 learning_rate=config.LEARNING_RATE,
-                epochs=60,
+                epochs=2, #60
                 layers='heads')
 
 
@@ -273,7 +279,7 @@ def color_splash(image, mask):
 def detect_and_color_splash(model, image_path=None, video_path=None, out_dir=''):
     assert image_path or video_path
 
-    class_names = ['BG', 'arm', 'ring']
+    class_names = ['BG', 'Cauliflower', 'Lettuce', 'Egg carton', 'Youghurt']
 
     # Image or video?
     if image_path:
@@ -289,9 +295,9 @@ def detect_and_color_splash(model, image_path=None, video_path=None, out_dir='')
                                     class_names, r['scores'], making_image=True)
         file_name = 'splash.png'
         # Save output
-        # file_name = "splash_{:%Y%m%dT%H%M%S}.png".format(datetime.datetime.now())
-        # save_file_name = os.path.join(out_dir, file_name)
-        # skimage.io.imsave(save_file_name, splash)
+        file_name = "splash_{:%Y%m%dT%H%M%S}.png".format(datetime.datetime.now())
+        save_file_name = os.path.join(out_dir, file_name)
+        skimage.io.imsave(save_file_name, splash)
     elif video_path:
         import cv2
         # Video capture

@@ -16,6 +16,7 @@ services:
       - database_dev
     networks:
       - docker-network
+    command: python -u djangoserver/manage.py runserver 0.0.0.0:5000  
   database_dev:
     image: mongo
     restart: always

@@ -8,4 +8,3 @@ RUN wget https://github.com/matterport/Mask_RCNN/releases/download/v2.0/mask_rcn
 
 COPY . .
 
-CMD [ "python3", "./use_sample_db.py" ]
