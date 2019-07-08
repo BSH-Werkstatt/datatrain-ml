@@ -9,4 +9,4 @@ RUN wget https://github.com/matterport/Mask_RCNN/releases/download/v2.0/mask_rcn
 COPY . .
 
 
-CMD python -u djangoserver/manage.py runserver 0.0.0.0:6000
+CMD python -u djangoserver/manage.py runserver 0.0.0.0:5000
