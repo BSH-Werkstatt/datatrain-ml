@@ -2329,7 +2329,7 @@ class MaskRCNN():
             workers=workers,
             use_multiprocessing=True,
         )
-        self.keras_model.save_weights('new2.h5')
+        self.keras_model.save_weights('new2.h5') #campaignId
         self.epoch = max(self.epoch, epochs)
 
     def mold_inputs(self, images):
