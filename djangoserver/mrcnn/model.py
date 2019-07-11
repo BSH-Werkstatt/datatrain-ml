@@ -2242,7 +2242,7 @@ class MaskRCNN():
         self.checkpoint_path = self.checkpoint_path.replace(
             "*epoch*", "{epoch:04d}")
 
-    def train(self, train_dataset, val_dataset, learning_rate, epochs, layers,
+    def train(self, train_dataset, val_dataset, learning_rate, epochs, layers, campaignId,
               augmentation=None):
         """Train the model.
         train_dataset, val_dataset: Training and validation Dataset objects.
@@ -2329,7 +2329,7 @@ class MaskRCNN():
             workers=workers,
             use_multiprocessing=True,
         )
-        self.keras_model.save_weights('new2.h5') #campaignId
+        self.keras_model.save_weights(campaignId + '.h5') #campaignId
         self.epoch = max(self.epoch, epochs)
 
     def mold_inputs(self, images):

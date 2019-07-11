@@ -262,9 +262,10 @@ def train(model, dataset, campaignId, taxonomy, annotationsTrain, annotationsVal
     # no need to train all layers, just the heads should do it. (Heads are the decision layer neurons)
     print("Training network heads")
     model.train(dataset_train, dataset_val,
-                learning_rate=config.LEARNING_RATE,
-                epochs=2, #60
-                layers='heads')
+                config.LEARNING_RATE, #learning_rate
+                2, #60 epochs
+                'heads', #layers
+                campaignId) 
 
 
 def color_splash(image, mask):
