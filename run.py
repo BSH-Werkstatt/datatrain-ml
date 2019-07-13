@@ -76,9 +76,9 @@ class SurgeryConfig(Config):
     DETECTION_MIN_CONFIDENCE = 0.9
 
     def __init__(self, taxonomy):
-        Config.__init__(self) # run __init__ from Config
         # Number of classes (including background)
         self.NUM_CLASSES = 1 + len(taxonomy)  # Background + objects
+        Config.__init__(self) # run __init__ from Config
 
 
 ############################################################
@@ -155,7 +155,7 @@ class SurgeryDataset(utils.Dataset):
                 polygons=polygons,
                 names=names)
 
-    def load_mask(self, image_id):
+    def load_mask(self, image_id, campaignId, taxonomy):
         """Generate instance masks for an image.
        Returns:
         masks: A bool array of shape [height, width, instance count] with
@@ -164,8 +164,8 @@ class SurgeryDataset(utils.Dataset):
         """
         # If not a surgery dataset image, delegate to parent class.
         image_info = self.image_info[image_id]
-        if image_info["source"] != "surgery":
-            return super(self.__class__, self).load_mask(image_id)
+        if image_info["source"] != campaignId: #"surgery"
+            return super(self.__class__, self).load_mask(image_id, campaignId, taxonomy)
 
         # Convert polygons to a bitmap mask of shape
         # [height, width, instance_count]
@@ -182,14 +182,16 @@ class SurgeryDataset(utils.Dataset):
         # In the surgery dataset, pictures are labeled with name 'a' and 'r' representing arm and ring.
         for i, p in enumerate(class_names):
         #"name" is the attributes name decided when labeling, etc. 'region_attributes': {name:'a'}
-            if p['Food'] == 'Cauliflower':
+            if p['label'] in taxonomy:
+                class_ids[i] = taxonomy.index(p['label']) + 1 # 0 is BG
+            '''if p['Food'] == 'Cauliflower':
                 class_ids[i] = 1
             elif p['Food'] == 'Lettuce':
                 class_ids[i] = 2
             elif p['Food'] == 'Egg carton':
                 class_ids[i] = 3
             elif p['Food'] == 'Youghurt':
-                class_ids[i] = 4
+                class_ids[i] = 4'''
             #assert code here to extend to other labels
         class_ids = class_ids.astype(int)
         # Return mask, and array of class IDs of each instance. Since we have
@@ -250,7 +252,7 @@ def train(model, dataset, campaignId, taxonomy, annotationsTrain, annotationsVal
     dataset_train = SurgeryDataset()
     dataset_train.load_VIA(dataset, "train", campaignId, taxonomy, annotationsTrain)
     dataset_train.prepare()
-    print('Train loaded')
+    print('dataset_train: ', dataset_train)
     # Validation dataset
     dataset_val = SurgeryDataset()
     dataset_val.load_VIA(dataset, "val", campaignId, taxonomy, annotationsVal)
@@ -265,7 +267,8 @@ def train(model, dataset, campaignId, taxonomy, annotationsTrain, annotationsVal
                 config.LEARNING_RATE, #learning_rate
                 2, #60 epochs
                 'heads', #layers
-                campaignId) 
+                campaignId, 
+                taxonomy) 
 
 
 def color_splash(image, mask):
@@ -413,7 +416,7 @@ def mask_to_rle(image_id, mask, scores):
 
 def detect(model, dataset_dir, subset, campaignId, taxonomy, annotations):
     """Run detection on images in the given directory."""
-    print("Running on {}".format(dataset_dir))
+    print("Detection running on {}".format(dataset_dir))
 
     os.makedirs('RESULTS')
     submit_dir = os.path.join(os.getcwd(), "RESULTS/")

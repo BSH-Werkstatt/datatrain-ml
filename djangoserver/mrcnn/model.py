@@ -1181,7 +1181,7 @@ def mrcnn_mask_loss_graph(target_masks, target_class_ids, pred_masks):
 #  Data Generator
 ############################################################
 
-def load_image_gt(dataset, config, image_id, augment=False, augmentation=None,
+def load_image_gt(dataset, config, image_id, campaignId, taxonomy, augment=False, augmentation=None,
                   use_mini_mask=False):
     """Load and return ground truth data for an image (image, mask, bounding boxes).
 
@@ -1206,8 +1206,9 @@ def load_image_gt(dataset, config, image_id, augment=False, augmentation=None,
         defined in MINI_MASK_SHAPE.
     """
     # Load image and mask
+    print('\nimgID: ', image_id)
     image = dataset.load_image(image_id)
-    mask, class_ids = dataset.load_mask(image_id)
+    mask, class_ids = dataset.load_mask(image_id, campaignId, taxonomy)
     original_shape = image.shape
     image, window, scale, padding, crop = utils.resize_image(
         image,
@@ -1627,7 +1628,7 @@ def generate_random_rois(image_shape, count, gt_class_ids, gt_boxes):
     return rois
 
 
-def data_generator(dataset, config, shuffle=True, augment=False, augmentation=None,
+def data_generator(dataset, config, campaignId, taxonomy, shuffle=True, augment=False, augmentation=None,
                    random_rois=0, batch_size=1, detection_targets=False):
     """A generator that returns images and corresponding target class ids,
     bounding box deltas, and masks.
@@ -1691,7 +1692,7 @@ def data_generator(dataset, config, shuffle=True, augment=False, augmentation=No
             # Get GT bounding boxes and masks for image.
             image_id = image_ids[image_index]
             image, image_meta, gt_class_ids, gt_boxes, gt_masks = \
-                load_image_gt(dataset, config, image_id, augment=augment,
+                load_image_gt(dataset, config, image_id, campaignId, taxonomy, augment=augment,
                               augmentation=augmentation,
                               use_mini_mask=config.USE_MINI_MASK)
 
@@ -2242,7 +2243,7 @@ class MaskRCNN():
         self.checkpoint_path = self.checkpoint_path.replace(
             "*epoch*", "{epoch:04d}")
 
-    def train(self, train_dataset, val_dataset, learning_rate, epochs, layers, campaignId,
+    def train(self, train_dataset, val_dataset, learning_rate, epochs, layers, campaignId, taxonomy,
               augmentation=None):
         """Train the model.
         train_dataset, val_dataset: Training and validation Dataset objects.
@@ -2288,10 +2289,10 @@ class MaskRCNN():
             layers = layer_regex[layers]
 
         # Data generators
-        train_generator = data_generator(train_dataset, self.config, shuffle=True,
+        train_generator = data_generator(train_dataset, self.config, campaignId, taxonomy, shuffle=True,
                                          augmentation=augmentation,
                                          batch_size=self.config.BATCH_SIZE)
-        val_generator = data_generator(val_dataset, self.config, shuffle=True,
+        val_generator = data_generator(val_dataset, self.config, campaignId, taxonomy, shuffle=True,
                                        batch_size=self.config.BATCH_SIZE)
 
         # Callbacks
@@ -2316,7 +2317,6 @@ class MaskRCNN():
             workers = 0
         else:
             workers = multiprocessing.cpu_count()
-
         self.keras_model.fit_generator(
             train_generator,
             initial_epoch=self.epoch,
