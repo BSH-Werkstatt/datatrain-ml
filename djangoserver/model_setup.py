@@ -62,8 +62,5 @@ def predict_img(filename, rcnn):
 
 def visualize(r, img, class_names, filename):	
 	# show photo with bounding boxes, masks, class labels and scores
-	try:
-		display_instances(img, r['rois'], r['masks'], r['class_ids'], class_names, r['scores'], making_image=True, detect=False, prediction_image_filename=filename) # making_image saves image
-	except:
-		print('error')
+	display_instances(img, r['rois'], r['masks'], r['class_ids'], class_names, r['scores'], making_image=True, detect=False, prediction_image_filename=filename) # making_image saves image
 	return

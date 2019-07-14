@@ -11,24 +11,21 @@ import model_setup as m
 @csrf_exempt # avoid cookies check in Postman
 def predict(request):
 	if request.method == 'POST':
-		try:
-			print(request.body)
-			body = json.loads(request.body)
-			url = body['imageURL']
-			urlTrack = request.build_absolute_uri() # URL where request was sent
+		print(request.body)
+		body = json.loads(request.body)
+		url = body['imageURL']
+		urlTrack = request.build_absolute_uri() # URL where request was sent
 
-			model_name = body['campaignId'] + ".h5"
-			campaign_class_names = ['BG']
-			for class_name in body['campaignTaxonomy']:
-				campaign_class_names.append(class_name)
+		model_name = body['campaignId'] + ".h5"
+		campaign_class_names = ['BG']
+		for class_name in body['campaignTaxonomy']:
+			campaign_class_names.append(class_name)
 
-			rcnn, class_names = m.define_model(model_name, campaign_class_names)
-			prediction, image = m.predict_img(url, rcnn)
-			randomName = str(uuid.uuid4()) + '.jpg'
-			filename = urlTrack + randomName # assign random filename to image 
-			m.visualize(prediction, image, class_names, randomName)
-		except:
-			print('views error')
+		rcnn, class_names = m.define_model(model_name, campaign_class_names)
+		prediction, image = m.predict_img(url, rcnn)
+		randomName = str(uuid.uuid4()) + '.jpg'
+		filename = urlTrack + randomName # assign random filename to image 
+		m.visualize(prediction, image, class_names, randomName)
 		return JsonResponse({'predictionURL':filename})
 
 @csrf_exempt
