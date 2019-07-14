@@ -13,7 +13,8 @@ class TestConfig(Config):
      NAME = "washingmachine"
      GPU_COUNT = 1
      IMAGES_PER_GPU = 1
-     NUM_CLASSES = 1 + 2
+	 def __init__(self, class_names):
+     	self.NUM_CLASSES = len(class_names)
 	 
 def define_model(model = None, class_names = None):
 	K.clear_session()
@@ -39,7 +40,7 @@ def define_model(model = None, class_names = None):
 				'sink', 'refrigerator', 'book', 'clock', 'vase', 'scissors',
 				'teddy bear', 'hair drier', 'toothbrush']
 
-	rcnn = MaskRCNN(mode='inference', model_dir='./', config=TestConfig())
+	rcnn = MaskRCNN(mode='inference', model_dir='./', config=TestConfig(class_names))
 	rcnn.load_weights(model, by_name=True)
 
 	return rcnn, class_names
