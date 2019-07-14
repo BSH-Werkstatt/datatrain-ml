@@ -29,6 +29,7 @@ sys.path.append(ROOT_DIR)  # To find local version of the library
 from mrcnn import utils
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
+import matplotlib
 import cv2
 
 ############################################################d
@@ -37,7 +38,6 @@ import cv2
 
 def display_images(images, titles=None, cols=4, cmap=None, norm=None,
                    interpolation=None):
-    matplotlib.use('agg')
     """Display the given set of images, optionally with titles.
     images: list or array of image tensors in HWC format.
     titles: optional. A list of titles to display with each image.
@@ -102,6 +102,7 @@ def display_instances(image, boxes, masks, class_ids, class_names,
     colors: (optional) An array or colors to use with each object
     captions: (optional) A list of strings to use as captions for each object
     """
+    matplotlib.use('QT4Agg')
     # Number of instances
     N = boxes.shape[0]
     if not N:

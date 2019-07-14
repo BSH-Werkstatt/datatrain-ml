@@ -7,6 +7,9 @@ from mrcnn.config import Config
 from mrcnn.model import MaskRCNN
 from pathlib import Path
 
+import matplotlib
+matplotlib.use('Agg')
+
 from imageio import imread
 
 # define the test configuration
@@ -59,5 +62,8 @@ def predict_img(filename, rcnn):
 
 def visualize(r, img, class_names, filename):	
 	# show photo with bounding boxes, masks, class labels and scores
-	display_instances(img, r['rois'], r['masks'], r['class_ids'], class_names, r['scores'], making_image=True, detect=False, prediction_image_filename=filename) # making_image saves image
+	try:
+		display_instances(img, r['rois'], r['masks'], r['class_ids'], class_names, r['scores'], making_image=True, detect=False, prediction_image_filename=filename) # making_image saves image
+	except:
+		print('error')
 	return
