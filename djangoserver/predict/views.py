@@ -11,11 +11,12 @@ import model_setup as m
 @csrf_exempt # avoid cookies check in Postman
 def predict(request):
 	if request.method == 'POST':
+		print(request.body)
 		body = json.loads(request.body)
 		url = body['imageURL']
 		urlTrack = request.build_absolute_uri() # URL where request was sent
 
-		model_name = "mask_rcnn-" + body['campaignName'].lower().replace(" ", "_") + ".h5"
+		model_name = body['campaignId'] + ".h5"
 		campaign_class_names = ['BG']
 		for class_name in body['campaignTaxonomy']:
 			campaign_class_names.append(class_name)

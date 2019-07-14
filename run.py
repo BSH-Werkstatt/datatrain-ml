@@ -32,12 +32,14 @@ Usage: import the module (see Jupyter notebooks for examples), or run from
 import os
 import sys
 import json
+import math
 import datetime
 import numpy as np
 import skimage.draw
+import cv2
 from matplotlib import pyplot as plt
 # Root directory of the project
-ROOT_DIR = os.path.abspath("../../")
+ROOT_DIR = os.path.abspath(".")
 
 # Import Mask RCNN
 sys.path.append(ROOT_DIR)  # To find local version of the library
@@ -61,14 +63,11 @@ class SurgeryConfig(Config):
     Derives from the base Config class and overrides some values.
     """
     # Give the configuration a recognizable name
-    NAME = "fridges"
+    NAME = "default"
 
     # We use a GPU with 12GB memory, which can fit two images.
     # Adjust down if you use a smaller GPU.
     IMAGES_PER_GPU = 1
-
-    # Number of classes (including background)
-    NUM_CLASSES = 1 + 4  # Background + objects
 
     # Number of training steps per epoch
     STEPS_PER_EPOCH = 100 #100
@@ -76,22 +75,30 @@ class SurgeryConfig(Config):
     # Skip detections with < 90% confidence
     DETECTION_MIN_CONFIDENCE = 0.9
 
+    def __init__(self, taxonomy):
+        # Number of classes (including background)
+        self.NUM_CLASSES = 1 + len(taxonomy)  # Background + objects
+        Config.__init__(self) # run __init__ from Config
+
 
 ############################################################
 #  Dataset
 ############################################################
 
 class SurgeryDataset(utils.Dataset):
-    def load_VIA(self, dataset_dir, subset, hc=False):
+    def load_VIA(self, dataset_dir, subset, campaignId, taxonomy, annotations, hc=False):
         """Load the surgery dataset from VIA.
         dataset_dir: Root directory of the dataset.
         subset: Subset to load: train or val or predict
         """
         # Add classes. We have only one class to add.
-        self.add_class("fridges", 1, "Cauliflower")
+        for idx, label in enumerate(taxonomy):
+            #print('ADD: ', campaignId, ' num ', idx, ' label ', label, '\n')
+            self.add_class(campaignId, idx+1, label)
+        '''self.add_class("fridges", 1, "Cauliflower")
         self.add_class("fridges", 2, "Lettuce")
         self.add_class("fridges", 3, "Egg carton")
-        self.add_class("fridges", 4, "Youghurt")
+        self.add_class("fridges", 4, "Youghurt")'''
         if hc is True:
             for i in range(1,14):
                 self.add_class("surgery", i, "{}".format(i))
@@ -116,36 +123,39 @@ class SurgeryDataset(utils.Dataset):
         #   'size': 100202
         # }
         # We mostly care about the x and y coordinates of each region
-        annotations = json.load(open(os.path.join(dataset_dir, "via_region_data.json")))
+        #annotations = json.load(open(os.path.join(dataset_dir, "via_region_data.json")))
 
-        annotations = list(annotations.values())  # don't need the dict keys
+        #annotations = list(annotations.values())  # don't need the dict keys
         # The VIA tool saves images in the JSON even if they don't have any
         # annotations. Skip unannotated images.
-        annotations = [a for a in annotations if a['regions']]
-
+        image_path = [a['url'] for a in annotations if a['annotations']]
+        image_id = [a['id'] for a in annotations if a['annotations']]
+        images = [a['annotations'] for a in annotations if a['annotations']] # 'annotations' cannot be []
         # Add images
-        for a in annotations:
-            # Get the x, y coordinaets of points of the polygons that make up
-            # the outline of each object instance. There are stores in the
-            # shape_attributes (see json format above)
-            polygons = [r['shape_attributes'] for r in a['regions']] #a['regions'].values()
-            names = [r['region_attributes'] for r in a['regions']] #a['regions'].values()
-            # load_mask() needs the image size to convert polygons to masks.
+        for idx, i in enumerate(images):
+            names = [{'label': a['label']} for a in i]
+            # Get the x, y coordinates of points of the polygons that make up
+            # the outline of each object instance. There are stored in the
+            # points (see json format above)
+            all_points_x = [math.floor(a['x']) for a in i for a in a['points']]
+            all_points_y = [math.floor(a['y']) for a in i for a in a['points']]
+            polygons = [{'name': a['type'], 'all_points_x': all_points_x, 'all_points_y': all_points_y} for a in i] #a['regions'].values()
+			# load_mask() needs the image size to convert polygons to masks.
             # Unfortunately, VIA doesn't include it in JSON, so we must read
             # the image. This is only managable since the dataset is tiny.
-            image_path = os.path.join(dataset_dir, a['filename'])
-            image = skimage.io.imread(image_path)
+            #image_path = [i["url"] for i in i] #'http://ios19bsh.ase.in.tum.de/dev/api/images/' + campaignId + '/' + image_id[idx] + '.jpg'
+            image = skimage.io.imread(image_path[idx])
             height, width = image.shape[:2]
 
             self.add_image(
-                "fridges",
-                image_id=a['filename'],  # use file name as a unique image id
-                path=image_path,
+                campaignId,
+                image_id= image_id[idx] + '.jpg',  # use file name as a unique image id
+                path=image_path[idx],
                 width=width, height=height,
                 polygons=polygons,
                 names=names)
 
-    def load_mask(self, image_id):
+    def load_mask(self, image_id, campaignId, taxonomy):
         """Generate instance masks for an image.
        Returns:
         masks: A bool array of shape [height, width, instance count] with
@@ -154,8 +164,8 @@ class SurgeryDataset(utils.Dataset):
         """
         # If not a surgery dataset image, delegate to parent class.
         image_info = self.image_info[image_id]
-        if image_info["source"] != "fridges":
-            return super(self.__class__, self).load_mask(image_id)
+        if image_info["source"] != campaignId: #"surgery"
+            return super(self.__class__, self).load_mask(image_id, campaignId, taxonomy)
 
         # Convert polygons to a bitmap mask of shape
         # [height, width, instance_count]
@@ -172,14 +182,16 @@ class SurgeryDataset(utils.Dataset):
         # In the surgery dataset, pictures are labeled with name 'a' and 'r' representing arm and ring.
         for i, p in enumerate(class_names):
         #"name" is the attributes name decided when labeling, etc. 'region_attributes': {name:'a'}
-            if p['Food'] == 'Cauliflower':
+            if p['label'] in taxonomy:
+                class_ids[i] = taxonomy.index(p['label']) + 1 # 0 is BG
+            '''if p['Food'] == 'Cauliflower':
                 class_ids[i] = 1
             elif p['Food'] == 'Lettuce':
                 class_ids[i] = 2
             elif p['Food'] == 'Egg carton':
                 class_ids[i] = 3
             elif p['Food'] == 'Youghurt':
-                class_ids[i] = 4
+                class_ids[i] = 4'''
             #assert code here to extend to other labels
         class_ids = class_ids.astype(int)
         # Return mask, and array of class IDs of each instance. Since we have
@@ -189,7 +201,7 @@ class SurgeryDataset(utils.Dataset):
     def image_reference(self, image_id):
         """Return the path of the image."""
         info = self.image_info[image_id]
-        if info["source"] == "fridges": # name of the project (e.g. surgery)
+        if info["source"] == "surgery": # name of the project (e.g. surgery)
             return info["path"]
         else:
             super(self.__class__, self).image_reference(image_id)
@@ -233,16 +245,17 @@ class SurgeryDataset(utils.Dataset):
         # one class ID only, we return an array of 1s
         return mask.astype(np.bool), class_ids
 
-def train(model, *dic):
+def train(model, dataset, campaignId, taxonomy, annotationsTrain, annotationsVal, config, *dic):
     """Train the model."""
+
     # Training dataset.
     dataset_train = SurgeryDataset()
-    dataset_train.load_VIA(args.dataset, "train")
+    dataset_train.load_VIA(dataset, "train", campaignId, taxonomy, annotationsTrain)
     dataset_train.prepare()
-
+    print('dataset_train: ', dataset_train)
     # Validation dataset
     dataset_val = SurgeryDataset()
-    dataset_val.load_VIA(args.dataset, "val")
+    dataset_val.load_VIA(dataset, "val", campaignId, taxonomy, annotationsVal)
     dataset_val.prepare()
 
     # *** This training schedu le is an example. Update to your needs ***
@@ -251,9 +264,11 @@ def train(model, *dic):
     # no need to train all layers, just the heads should do it. (Heads are the decision layer neurons)
     print("Training network heads")
     model.train(dataset_train, dataset_val,
-                learning_rate=config.LEARNING_RATE,
-                epochs=2, #60
-                layers='heads')
+                config.LEARNING_RATE, #learning_rate
+                2, #60 epochs
+                'heads', #layers
+                campaignId, 
+                taxonomy) 
 
 
 def color_splash(image, mask):
@@ -276,17 +291,18 @@ def color_splash(image, mask):
     return splash
 
 
-def detect_and_color_splash(model, image_path=None, video_path=None, out_dir=''):
+def detect_and_color_splash(model, taxonomy, image_path=None, video_path=None, out_dir=''):
     assert image_path or video_path
 
-    class_names = ['BG', 'Cauliflower', 'Lettuce', 'Egg carton', 'Youghurt']
+    class_names = taxonomy #['BG', 'Cauliflower', 'Lettuce', 'Egg carton', 'Youghurt']
+    class_names.insert(0, 'BG')
 
     # Image or video?
     if image_path:
         # Run model detection and generate the color splash effect
-        print("Running on {}".format(args.image))
+        print("Running on {}".format(image))
         # Read image
-        image = skimage.io.imread(args.image)
+        image = skimage.io.imread(image)
         # Detect objects
         r = model.detect([image], verbose=1)[0]
         # Color splash
@@ -398,15 +414,15 @@ def mask_to_rle(image_id, mask, scores):
         lines.append("{}, {}".format(image_id, rle))
     return "\n".join(lines)
 
-def detect(model, dataset_dir, subset):
+def detect(model, dataset_dir, subset, campaignId, taxonomy, annotations):
     """Run detection on images in the given directory."""
-    print("Running on {}".format(dataset_dir))
+    print("Detection running on {}".format(dataset_dir))
 
     os.makedirs('RESULTS')
     submit_dir = os.path.join(os.getcwd(), "RESULTS/")
     # Read dataset
     dataset = SurgeryDataset()
-    dataset.load_VIA(dataset_dir, subset)
+    dataset.load_VIA(dataset_dir, subset, campaignId, taxonomy, annotations)
     dataset.prepare()
     # Load over images
     submission = []
@@ -437,10 +453,9 @@ def detect(model, dataset_dir, subset):
 #  Training
 ############################################################
 
-if __name__ == '__main__':
-    import argparse
-
+def run_main(command, weights, campaignId, taxonomy, annotations, dataset=None, image=None, video=None, subset=None, logs=DEFAULT_LOGS_DIR):
     # Parse command line arguments
+    '''
     parser = argparse.ArgumentParser(
         description='Train Mask R-CNN to detect rings and robot arms.')
     parser.add_argument("command",
@@ -466,57 +481,65 @@ if __name__ == '__main__':
                         metavar="Dataset sub-directory",
                         help="Subset of dataset to run prediction on")
     args = parser.parse_args()
+    '''
+    # Split annotations json into 2: val and train .json
+    annotations = [a for a in annotations if a["annotations"]] # only images with annotations considered
+    numImages = len(annotations)
+    percentageTrain = 0.8 # percentage of images for training (1 - percentageTrain = percentageVal)
+    annotationsTrain = annotations[:math.floor(numImages*percentageTrain)]
+    annotationsVal = annotations[math.floor(numImages*percentageTrain):]
+
 
     # Validate arguments
-    if args.command == "train":
-        assert args.dataset, "Argument --dataset is required for training"
+    if command == "train":
+        assert dataset, "Argument --dataset is required for training"
 
-    elif args.command == "splash":
-        assert args.image or args.video,\
+    elif command == "splash":
+        assert image or video,\
                "Provide --image or --video to apply color splash"
 
-    print("Weights: ", args.weights)
-    print("Dataset: ", args.dataset)
-    print("Logs: ", args.logs)
+    print("Weights: ", weights)
+    print("Dataset: ", dataset)
+    print("Logs: ", logs)
 
     # Configurations
-    if args.command == "train":
-        config = SurgeryConfig()
+    if command == "train":
+        config = SurgeryConfig(taxonomy)
     else:
         class InferenceConfig(SurgeryConfig):
             # Set batch size to 1 since we'll be running inference on
             # one image at a time. Batch size = GPU_COUNT * IMAGES_PER_GPU
             GPU_COUNT = 1
             IMAGES_PER_GPU = 1
-        config = InferenceConfig()
+        config = InferenceConfig(taxonomy)
     config.display()
 
     # Create model
-    if args.command == "train":
+    if command == "train":
         model = modellib.MaskRCNN(mode="training", config=config,
-                                  model_dir=args.logs)
+                                  model_dir=logs)
     else:
         model = modellib.MaskRCNN(mode="inference", config=config,
-                                  model_dir=args.logs)
+                                  model_dir=logs)
 
     # Select weights file to load
-    if args.weights.lower() == "coco":
+    if weights.lower() == "coco":
         weights_path = COCO_WEIGHTS_PATH
         # Download weights file
         if not os.path.exists(weights_path):
             utils.download_trained_weights(weights_path)
-    elif args.weights.lower() == "last":
+    elif weights.lower() == "last":
         # Find last trained weights
         weights_path = model.find_last()[1]
-    elif args.weights.lower() == "imagenet":
+    elif weights.lower() == "imagenet":
         # Start from ImageNet trained weights
         weights_path = model.get_imagenet_weights()
     else:
-        weights_path = args.weights
+        weights_path = weights
 
     # Load weights
     print("Loading weights ", weights_path)
-    if args.weights.lower() == "coco":
+    if weights.lower() == "coco":
         # Exclude the last layers because they require a matching
         # number of classes
         model.load_weights(weights_path, by_name=True, exclude=[
@@ -526,18 +549,21 @@ if __name__ == '__main__':
         model.load_weights(weights_path, by_name=True)
 
     # Train or evaluate
-    if args.command == "train":
-        train(model)
-    elif args.command == "detect":
-        detect(model, args.dataset, args.subset)
-    elif args.command == "splash":
-        detect_and_color_splash(model, image_path=args.image,
-                                video_path=args.video)
+    if command == "train":
+        train(model, dataset, campaignId, taxonomy, annotationsTrain, annotationsVal, config)
+    elif command == "detect":
+        detect(model, dataset, subset, campaignId, taxonomy, annotations)
+    elif command == "splash":
+        detect_and_color_splash(model, taxonomy, image_path=image,
+                                video_path=video)
     else:
         print("'{}' is not recognized. "
-              "Use 'train' or 'splash'".format(args.command))
+              "Use 'train' or 'splash'".format(command))
 
 
+
+if __name__ == '__main__':
+    import argparse
 # dataset_dir = '/home/simon/deeplearning/mask_rcnn/data'
 # dataset_train = SurgeryDataset()
 # dataset_train.VIA(dataset_dir, "train")

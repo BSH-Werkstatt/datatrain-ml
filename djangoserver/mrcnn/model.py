@@ -10,6 +10,7 @@ Written by Waleed Abdulla
 import os
 import random
 import datetime
+import time
 import re
 import math
 import logging
@@ -25,6 +26,8 @@ import keras.engine as KE
 import keras.models as KM
 
 from mrcnn import utils
+
+import requests
 
 # Requires TensorFlow 1.3+ and Keras 2.0.8+.
 from distutils.version import LooseVersion
@@ -1181,7 +1184,7 @@ def mrcnn_mask_loss_graph(target_masks, target_class_ids, pred_masks):
 #  Data Generator
 ############################################################
 
-def load_image_gt(dataset, config, image_id, augment=False, augmentation=None,
+def load_image_gt(dataset, config, image_id, campaignId, taxonomy, augment=False, augmentation=None,
                   use_mini_mask=False):
     """Load and return ground truth data for an image (image, mask, bounding boxes).
 
@@ -1206,8 +1209,9 @@ def load_image_gt(dataset, config, image_id, augment=False, augmentation=None,
         defined in MINI_MASK_SHAPE.
     """
     # Load image and mask
+    print('\nimgID: ', image_id)
     image = dataset.load_image(image_id)
-    mask, class_ids = dataset.load_mask(image_id)
+    mask, class_ids = dataset.load_mask(image_id, campaignId, taxonomy)
     original_shape = image.shape
     image, window, scale, padding, crop = utils.resize_image(
         image,
@@ -1627,7 +1631,7 @@ def generate_random_rois(image_shape, count, gt_class_ids, gt_boxes):
     return rois
 
 
-def data_generator(dataset, config, shuffle=True, augment=False, augmentation=None,
+def data_generator(dataset, config, campaignId, taxonomy, shuffle=True, augment=False, augmentation=None,
                    random_rois=0, batch_size=1, detection_targets=False):
     """A generator that returns images and corresponding target class ids,
     bounding box deltas, and masks.
@@ -1691,7 +1695,7 @@ def data_generator(dataset, config, shuffle=True, augment=False, augmentation=No
             # Get GT bounding boxes and masks for image.
             image_id = image_ids[image_index]
             image, image_meta, gt_class_ids, gt_boxes, gt_masks = \
-                load_image_gt(dataset, config, image_id, augment=augment,
+                load_image_gt(dataset, config, image_id, campaignId, taxonomy, augment=augment,
                               augmentation=augmentation,
                               use_mini_mask=config.USE_MINI_MASK)
 
@@ -2242,7 +2246,7 @@ class MaskRCNN():
         self.checkpoint_path = self.checkpoint_path.replace(
             "*epoch*", "{epoch:04d}")
 
-    def train(self, train_dataset, val_dataset, learning_rate, epochs, layers,
+    def train(self, train_dataset, val_dataset, learning_rate, epochs, layers, campaignId, taxonomy,
               augmentation=None):
         """Train the model.
         train_dataset, val_dataset: Training and validation Dataset objects.
@@ -2288,19 +2292,139 @@ class MaskRCNN():
             layers = layer_regex[layers]
 
         # Data generators
-        train_generator = data_generator(train_dataset, self.config, shuffle=True,
+        train_generator = data_generator(train_dataset, self.config, campaignId, taxonomy, shuffle=True,
                                          augmentation=augmentation,
                                          batch_size=self.config.BATCH_SIZE)
-        val_generator = data_generator(val_dataset, self.config, shuffle=True,
+        val_generator = data_generator(val_dataset, self.config, campaignId, taxonomy, shuffle=True,
                                        batch_size=self.config.BATCH_SIZE)
 
         # Callbacks
+        class RemotePUT(keras.callbacks.Callback):
+            """Callback used to stream events to a server.
+            Requires the `requests` library.
+            Events are sent to `root + '/publish/epoch/end/'` by default. Calls are
+            HTTP PUT, with a `data` argument which is a
+            JSON-encoded dictionary of event data.
+            If send_as_json is set to True, the content type of the request will be
+            application/json. Otherwise the serialized JSON will be send within a form
+            # Arguments
+            root: String; root url of the target server.
+            path: String; path relative to `root` to which the events will be sent.
+            field: String; JSON field under which the data will be stored.
+            The field is used only if the payload is sent within a form
+            (i.e. send_as_json is set to False).
+            headers: Dictionary; optional custom HTTP headers.
+            send_as_json: Boolean; whether the request should be send as
+            application/json.
+            """
+
+            def __init__(self,
+                 root='http://localhost:9000',
+                 path='/publish/epoch/end/',
+                 field='data',
+                 headers=None,
+                 send_as_json=False):
+                super(RemotePUT, self).__init__()
+
+                self.root = root
+                self.path = path
+                self.field = field
+                self.headers = headers
+                self.send_as_json = send_as_json
+
+            def on_epoch_end(self, epoch, logs=None):
+                if requests is None:
+                    raise ImportError('RemoteMonitor requires '
+                              'the `requests` library.')
+                logs['finished'] = False
+                logs = logs or {}
+                send = {}
+                send['epoch'] = epoch
+                for k, v in logs.items():
+                    if isinstance(v, (np.ndarray, np.generic)):
+                        send[k] = v.item()
+                    else:
+                        send[k] = v
+                try:
+                    if self.send_as_json:
+                        requests.put(self.root + self.path, json=send, headers=self.headers)
+                    else:
+                        requests.put(self.root + self.path,
+                                    {self.field: json.dumps(send)},
+                                    headers=self.headers)
+                except requests.exceptions.RequestException:
+                    warnings.warn('Warning: could not reach RemoteMonitor '
+                                'root server at ' + str(self.root))
+
+        class TimeHistory(keras.callbacks.Callback): 
+            def on_train_begin(self, logs={}):
+                self.times = []
+            def on_epoch_end(self, batch, logs={}):
+                self.epoch_time_start = time.time()
+            def on_epoch_end(self, batch, logs={}):
+                self.times.append(time.time() - self.epoch_time_start)
+        time_callback = TimeHistory() #time_callback.times
+
+        class Remote(RemotePUT): #RemoteMonitor makes a POST request, we need a PUT
+            def on_train_end(self, logs):
+                print('Training finished\n')
+                if requests is None:
+                    raise ImportError('RemoteMonitor requires '
+                              'the `requests` library.')
+                logs['finished'] = True
+                logs = logs or {}
+                send = {}
+                for k, v in logs.items():
+                    if isinstance(v, (np.ndarray, np.generic)):
+                        send[k] = v.item()
+                    else:
+                        send[k] = v
+                try:
+                    if self.send_as_json:
+                        requests.put(self.root + self.path, json=send, headers=self.headers)
+                    else:
+                        requests.put(self.root + self.path,
+                                    {self.field: json.dumps(send)},
+                                    headers=self.headers)
+                except requests.exceptions.RequestException:
+                    warnings.warn('Warning: could not reach RemoteMonitor '
+                                'root server at ' + str(self.root))
+            def on_batch_end(self, batch, logs=None):
+                if requests is None:
+                    raise ImportError('RemoteMonitor requires '
+                              'the `requests` library.')
+                logs['finished'] = False
+                logs = logs or {}
+                send = {}
+                send['batch'] = batch
+                for k, v in logs.items():
+                    if isinstance(v, (np.ndarray, np.generic)):
+                        send[k] = v.item()
+                    else:
+                        send[k] = v
+                try:
+                    if self.send_as_json:
+                        requests.put(self.root + self.path, json=send, headers=self.headers)
+                    else:
+                        requests.put(self.root + self.path,
+                                    {self.field: json.dumps(send)},
+                                    headers=self.headers)
+                except requests.exceptions.RequestException:
+                    warnings.warn('Warning: could not reach RemoteMonitor '
+                                'root server at ' + str(self.root))
+
+        remote = Remote(root='https://datatrain-static.s3.amazonaws.com/train/' + campaignId, # PUT call to <root>
+                            path='.',
+                            send_as_json=True)
+            
+
         callbacks = [
             keras.callbacks.TensorBoard(log_dir=self.log_dir,
                                         histogram_freq=0, write_graph=True, write_images=False),
             keras.callbacks.ModelCheckpoint(filepath = self.checkpoint_path, # r'C:\Users\Jaime\ios19bsh-ml\logs\models\new_model.h5'
                                             verbose=1, save_best_only=True, #verbose=0, best wasn't there
-											save_weights_only=True)
+											save_weights_only=True),
+            remote
         ]
 
         # Train
@@ -2316,7 +2440,6 @@ class MaskRCNN():
             workers = 0
         else:
             workers = multiprocessing.cpu_count()
-
         self.keras_model.fit_generator(
             train_generator,
             initial_epoch=self.epoch,
@@ -2329,7 +2452,7 @@ class MaskRCNN():
             workers=workers,
             use_multiprocessing=True,
         )
-        self.keras_model.save_weights('new2.h5')
+        self.keras_model.save_weights(campaignId + '.h5') #campaignId
         self.epoch = max(self.epoch, epochs)
 
     def mold_inputs(self, images):

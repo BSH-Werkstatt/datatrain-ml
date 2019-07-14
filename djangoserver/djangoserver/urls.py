@@ -19,5 +19,6 @@ from django.urls import include, path, re_path
 urlpatterns = [
     path('admin/', admin.site.urls),
 	re_path(r'^predictions/', include('predict.urls')),
-	re_path(r'^healthcheck/', include('healthcheck.urls'))
+	re_path(r'^healthcheck/', include('healthcheck.urls')),
+    re_path(r'train/', include('train.urls')),
 ]
