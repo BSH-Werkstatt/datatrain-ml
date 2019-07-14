@@ -37,6 +37,7 @@ import cv2
 
 def display_images(images, titles=None, cols=4, cmap=None, norm=None,
                    interpolation=None):
+    matplotlib.use('agg')
     """Display the given set of images, optionally with titles.
     images: list or array of image tensors in HWC format.
     titles: optional. A list of titles to display with each image.
@@ -47,7 +48,7 @@ def display_images(images, titles=None, cols=4, cmap=None, norm=None,
     """
     titles = titles if titles is not None else [""] * len(images)
     rows = len(images) // cols + 1
-    plt.figure(figsize=(14, 14 * rows // cols))
+    #plt.figure(figsize=(14, 14 * rows // cols))
     i = 1
     for image, title in zip(images, titles):
         plt.subplot(rows, cols, i)
@@ -56,7 +57,7 @@ def display_images(images, titles=None, cols=4, cmap=None, norm=None,
         plt.imshow(image.astype(np.uint8), cmap=cmap,
                    norm=norm, interpolation=interpolation)
         i += 1
-    plt.show()
+    #plt.show()
 
 
 def random_colors(N, bright=True):
@@ -199,8 +200,8 @@ def display_instances(image, boxes, masks, class_ids, class_names,
     elif making_image:
         #cv2.imwrite(prediction_image_filename, X)
         plt.savefig(prediction_image_filename, bbox_inches='tight', pad_inches=0)
-    if auto_show:
-        plt.show()
+    #if auto_show:
+        #plt.show()
     plt.close('all')
 
 

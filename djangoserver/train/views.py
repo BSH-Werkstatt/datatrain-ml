@@ -21,7 +21,7 @@ def train(request):
 		campaignInfoUrl = 'http://ios19bsh.ase.in.tum.de/dev/api/campaigns/' + campaignId + '/images'
 		result = requests.get(campaignInfoUrl) #('http://ios19bsh.ase.in.tum.de/dev/api/campaigns/5d276e02d3ad9e10b8864893/images')
 		imagesInfo = json.loads(result.text)
-		print('Image count: ', len([a for a in imagesInfo if a['annotations']]))
+		print('Image samples: ', len([a for a in imagesInfo if a['annotations']]))
 		from run import run_main
 		#campaignId = '5d276e02d3ad9e10b8864893'
 		#classes = ["Tomato","Lime","Kohlrabi","Kiwi","Iceberg Lettuce","Ginger","Eggplant","Cucumber","Cauliflower","Banana"]

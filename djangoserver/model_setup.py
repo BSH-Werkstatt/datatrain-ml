@@ -5,24 +5,24 @@ from keras import backend as K
 from mrcnn.visualize import display_instances
 from mrcnn.config import Config
 from mrcnn.model import MaskRCNN
+from pathlib import Path
 
 from imageio import imread
 
 # define the test configuration
 class TestConfig(Config):
-     NAME = "washingmachine"
+     NAME = "predictdefault"
      GPU_COUNT = 1
      IMAGES_PER_GPU = 1
-	 def __init__(self, class_names):
-     	self.NUM_CLASSES = len(class_names)
+     def __init__(self, class_names):
+        self.NUM_CLASSES = len(class_names)
+        Config.__init__(self)
 	 
 def define_model(model = None, class_names = None):
 	K.clear_session()
 
-	if model is None:
+	if Path(model).exists() == False:
 		model = 'mask_rcnn_coco.h5'
-	
-	if class_names is None:
 		# define 81 classes that the coco model knowns about
 		class_names = ['BG', 'person', 'bicycle', 'car', 'motorcycle', 'airplane',
 				'bus', 'train', 'truck', 'boat', 'traffic light',

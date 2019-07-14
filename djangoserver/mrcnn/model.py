@@ -10,6 +10,7 @@ Written by Waleed Abdulla
 import os
 import random
 import datetime
+import time
 import re
 import math
 import logging
@@ -25,6 +26,8 @@ import keras.engine as KE
 import keras.models as KM
 
 from mrcnn import utils
+
+import requests
 
 # Requires TensorFlow 1.3+ and Keras 2.0.8+.
 from distutils.version import LooseVersion
@@ -2296,12 +2299,132 @@ class MaskRCNN():
                                        batch_size=self.config.BATCH_SIZE)
 
         # Callbacks
+        class RemotePUT(keras.callbacks.Callback):
+            """Callback used to stream events to a server.
+            Requires the `requests` library.
+            Events are sent to `root + '/publish/epoch/end/'` by default. Calls are
+            HTTP PUT, with a `data` argument which is a
+            JSON-encoded dictionary of event data.
+            If send_as_json is set to True, the content type of the request will be
+            application/json. Otherwise the serialized JSON will be send within a form
+            # Arguments
+            root: String; root url of the target server.
+            path: String; path relative to `root` to which the events will be sent.
+            field: String; JSON field under which the data will be stored.
+            The field is used only if the payload is sent within a form
+            (i.e. send_as_json is set to False).
+            headers: Dictionary; optional custom HTTP headers.
+            send_as_json: Boolean; whether the request should be send as
+            application/json.
+            """
+
+            def __init__(self,
+                 root='http://localhost:9000',
+                 path='/publish/epoch/end/',
+                 field='data',
+                 headers=None,
+                 send_as_json=False):
+                super(RemotePUT, self).__init__()
+
+                self.root = root
+                self.path = path
+                self.field = field
+                self.headers = headers
+                self.send_as_json = send_as_json
+
+            def on_epoch_end(self, epoch, logs=None):
+                if requests is None:
+                    raise ImportError('RemoteMonitor requires '
+                              'the `requests` library.')
+                logs['finished'] = False
+                logs = logs or {}
+                send = {}
+                send['epoch'] = epoch
+                for k, v in logs.items():
+                    if isinstance(v, (np.ndarray, np.generic)):
+                        send[k] = v.item()
+                    else:
+                        send[k] = v
+                try:
+                    if self.send_as_json:
+                        requests.put(self.root + self.path, json=send, headers=self.headers)
+                    else:
+                        requests.put(self.root + self.path,
+                                    {self.field: json.dumps(send)},
+                                    headers=self.headers)
+                except requests.exceptions.RequestException:
+                    warnings.warn('Warning: could not reach RemoteMonitor '
+                                'root server at ' + str(self.root))
+
+        class TimeHistory(keras.callbacks.Callback): 
+            def on_train_begin(self, logs={}):
+                self.times = []
+            def on_epoch_end(self, batch, logs={}):
+                self.epoch_time_start = time.time()
+            def on_epoch_end(self, batch, logs={}):
+                self.times.append(time.time() - self.epoch_time_start)
+        time_callback = TimeHistory() #time_callback.times
+
+        class Remote(RemotePUT): #RemoteMonitor makes a POST request, we need a PUT
+            def on_train_end(self, logs):
+                print('Training finished\n')
+                if requests is None:
+                    raise ImportError('RemoteMonitor requires '
+                              'the `requests` library.')
+                logs['finished'] = True
+                logs = logs or {}
+                send = {}
+                for k, v in logs.items():
+                    if isinstance(v, (np.ndarray, np.generic)):
+                        send[k] = v.item()
+                    else:
+                        send[k] = v
+                try:
+                    if self.send_as_json:
+                        requests.put(self.root + self.path, json=send, headers=self.headers)
+                    else:
+                        requests.put(self.root + self.path,
+                                    {self.field: json.dumps(send)},
+                                    headers=self.headers)
+                except requests.exceptions.RequestException:
+                    warnings.warn('Warning: could not reach RemoteMonitor '
+                                'root server at ' + str(self.root))
+            def on_batch_end(self, batch, logs=None):
+                if requests is None:
+                    raise ImportError('RemoteMonitor requires '
+                              'the `requests` library.')
+                logs['finished'] = False
+                logs = logs or {}
+                send = {}
+                send['batch'] = batch
+                for k, v in logs.items():
+                    if isinstance(v, (np.ndarray, np.generic)):
+                        send[k] = v.item()
+                    else:
+                        send[k] = v
+                try:
+                    if self.send_as_json:
+                        requests.put(self.root + self.path, json=send, headers=self.headers)
+                    else:
+                        requests.put(self.root + self.path,
+                                    {self.field: json.dumps(send)},
+                                    headers=self.headers)
+                except requests.exceptions.RequestException:
+                    warnings.warn('Warning: could not reach RemoteMonitor '
+                                'root server at ' + str(self.root))
+
+        remote = Remote(root='https://datatrain-static.s3.amazonaws.com/train/' + campaignId, # PUT call to <root>
+                            path='.',
+                            send_as_json=True)
+            
+
         callbacks = [
             keras.callbacks.TensorBoard(log_dir=self.log_dir,
                                         histogram_freq=0, write_graph=True, write_images=False),
             keras.callbacks.ModelCheckpoint(filepath = self.checkpoint_path, # r'C:\Users\Jaime\ios19bsh-ml\logs\models\new_model.h5'
                                             verbose=1, save_best_only=True, #verbose=0, best wasn't there
-											save_weights_only=True)
+											save_weights_only=True),
+            remote
         ]
 
         # Train

@@ -11,6 +11,7 @@ import model_setup as m
 @csrf_exempt # avoid cookies check in Postman
 def predict(request):
 	if request.method == 'POST':
+		print(request.body)
 		body = json.loads(request.body)
 		url = body['imageURL']
 		urlTrack = request.build_absolute_uri() # URL where request was sent
