@@ -1,3 +1,4 @@
+import os
 from django.http import HttpResponse
 from django.http import JsonResponse
 from django.http import FileResponse
@@ -35,4 +36,8 @@ def predictReturnFile(request):
 		#url = body['predictionURL']
 		url = request.build_absolute_uri()
 		filename = url.rsplit('/', 1)[-1]
-		return FileResponse(open(filename, 'rb'))  #response
+		with open(filename, 'rb') as f:
+			fileContent = f.read()
+		responseImg =  HttpResponse(fileContent, content_type='image/jpeg') #FileResponse(open(filename, 'rb')) 
+		os.remove(filename)
+		return responseImg

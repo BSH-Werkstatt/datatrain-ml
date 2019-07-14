@@ -25,6 +25,6 @@ def train(request):
 		from run import run_main
 		#campaignId = '5d276e02d3ad9e10b8864893'
 		#classes = ["Tomato","Lime","Kohlrabi","Kiwi","Iceberg Lettuce","Ginger","Eggplant","Cucumber","Cauliflower","Banana"]
-		run_main('train', 'coco', campaignId, classes, imagesInfo, dataset='http://ios19bsh.ase.in.tum.de/dev/api/campaigns/' + campaignId + '/')
-		return JsonResponse({'training':1})
+		run_main('train', 'coco', campaignId, classes, imagesInfo, dataset='https://datatrain-static.s3.amazonaws.com/dev/api/campaigns/' + campaignId + '/') #http://ios19bsh.ase.in.tum.de
+		return JsonResponse({'training':1}) 
 
