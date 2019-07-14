@@ -529,8 +529,14 @@ def run_main(command, weights, campaignId, taxonomy, annotations, dataset=None, 
         if not os.path.exists(weights_path):
             utils.download_trained_weights(weights_path)
     elif weights.lower() == "last":
+        # Continue training previous model
+        try:
+            weights_path = os.path.join(ROOT_DIR, campaignId + ".h5")
+        except:
+            print('No previous model with this campaignId. Training from pretrained COCO model.')
+            weights_path = COCO_WEIGHTS_PATH
         # Find last trained weights
-        weights_path = model.find_last()[1]
+        #weights_path = model.find_last()[1]
     elif weights.lower() == "imagenet":
         # Start from ImageNet trained weights
         weights_path = model.get_imagenet_weights()
