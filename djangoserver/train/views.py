@@ -4,27 +4,47 @@ from django.http import FileResponse
 import requests
 import urllib
 import json
-import uuid 
+import uuid
 from django.views.decorators.csrf import csrf_exempt
 
+from . import runtrain
 import model_setup as m
+import shutil
+import os
+from threading import Thread
 
-@csrf_exempt # avoid cookies check in Postman
+threads = []
+
+
+@csrf_exempt  # avoid cookies check in Postman
 def train(request):
-	if request.method == 'POST':
-		body = json.loads(request.body)
-		print(body)
-		classes = body['taxonomy']
-		campaignId = body['campaignId']
-		#url = request.build_absolute_uri()
-		#campaignId = url.rsplit('/', 1)[-2] # url is ...<campaignId>/train
-		campaignInfoUrl = 'http://ios19bsh.ase.in.tum.de/dev/api/campaigns/' + campaignId + '/images'
-		result = requests.get(campaignInfoUrl) #('http://ios19bsh.ase.in.tum.de/dev/api/campaigns/5d276e02d3ad9e10b8864893/images')
-		imagesInfo = json.loads(result.text)
-		print('Image samples: ', len([a for a in imagesInfo if a['annotations']]))
-		from run import run_main
-		#campaignId = '5d276e02d3ad9e10b8864893'
-		#classes = ["Tomato","Lime","Kohlrabi","Kiwi","Iceberg Lettuce","Ginger","Eggplant","Cucumber","Cauliflower","Banana"]
-		run_main('train', 'coco', campaignId, classes, imagesInfo, dataset='http://ios19bsh.ase.in.tum.de/dev/api/campaigns/' + campaignId + '/')
-		return JsonResponse({'training':1})
 
+    if request.method == 'POST':
+        body = json.loads(request.body)
+
+        classes = body['taxonomy']
+        campaignId = body['campaignId']
+        campaignInfoUrl = 'http://api.datatrain.rocks/campaigns/' + campaignId + '/images'
+
+        result = requests.get(campaignInfoUrl)
+        imagesInfo = json.loads(result.text)
+
+        print('Image samples: ', len(
+            [a for a in imagesInfo if a['annotations']]))
+
+        campaign_link = 'http://api.datatrain.rocks/campaigns/' + campaignId + '/'
+        t = Thread(target=start_train_thread, args=('train', 'coco',
+                                                    campaignId, classes, imagesInfo, campaign_link, ))
+        threads.append(t)
+        print("---THREAD COUNT:" + str(len(threads)) + "---")
+        t.start()
+
+        return JsonResponse({'training': 1, 'thread_name': t.getName()})
+
+
+def start_train_thread(cmd, base_model, campaignId, classes, imagesInfo, campaign_link):
+    runtrain.train_main(cmd, base_model, campaignId,
+                        classes, imagesInfo, campaign_link)
+
+    campaign_dir = os.getcwd() + '/campaigns/' + campaignId + '/'
+    shutil.rmtree(campaign_dir)

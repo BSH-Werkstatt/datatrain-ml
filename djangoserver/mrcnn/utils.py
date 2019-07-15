@@ -267,12 +267,37 @@ class Dataset(object):
             "name": class_name,
         })
 
+    def isUrl(self, path):
+        return path.startswith('http://') or path.startswith('https://')
+
     def add_image(self, source, image_id, path, **kwargs):
+        url = path
+
+        print(image_id)
+        if self.isUrl(path):
+            dir_path = os.getcwd()
+            campaigns_dir = dir_path + '/campaigns/'
+            campaign_dir = dir_path + '/campaigns/' + source + '/'
+
+            if not os.path.exists(campaigns_dir):
+                os.makedirs(campaigns_dir)
+            if not os.path.exists(campaign_dir):
+                os.makedirs(campaign_dir)
+
+            target_path = campaign_dir + image_id
+            if not os.path.exists(target_path):
+                # os.unlink(target_path)
+                urllib.request.urlretrieve(path, target_path)
+        else:
+            target_path = path
+            
         image_info = {
             "id": image_id,
             "source": source,
-            "path": path,
+            "path": target_path,
+            "url": url
         }
+
         image_info.update(kwargs)
         self.image_info.append(image_info)
 
@@ -361,7 +386,7 @@ class Dataset(object):
         """Load the specified image and return a [H,W,3] Numpy array.
         """
         # Load image
-        print('URL: ', self.image_info[image_id]['path'])
+        # print('URL: ', self.image_info[image_id]['path'])
         image = skimage.io.imread(self.image_info[image_id]['path'])
         # If grayscale. Convert to RGB for consistency.
         if image.ndim != 3:

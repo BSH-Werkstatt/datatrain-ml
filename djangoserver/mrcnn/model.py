@@ -1209,7 +1209,7 @@ def load_image_gt(dataset, config, image_id, campaignId, taxonomy, augment=False
         defined in MINI_MASK_SHAPE.
     """
     # Load image and mask
-    print('\nimgID: ', image_id)
+    # print('\nimgID: ', image_id)
     image = dataset.load_image(image_id)
     mask, class_ids = dataset.load_mask(image_id, campaignId, taxonomy)
     original_shape = image.shape

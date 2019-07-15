@@ -70,7 +70,7 @@ class SurgeryConfig(Config):
     IMAGES_PER_GPU = 1
 
     # Number of training steps per epoch
-    STEPS_PER_EPOCH = 100 
+    STEPS_PER_EPOCH = 100 #100
 
     # Skip detections with < 90% confidence
     DETECTION_MIN_CONFIDENCE = 0.9
@@ -265,7 +265,7 @@ def train(model, dataset, campaignId, taxonomy, annotationsTrain, annotationsVal
     print("Training network heads")
     model.train(dataset_train, dataset_val,
                 config.LEARNING_RATE, #learning_rate
-                2, #60 epochs
+                5, #60 epochs
                 'heads', #layers
                 campaignId, 
                 taxonomy) 
@@ -453,7 +453,7 @@ def detect(model, dataset_dir, subset, campaignId, taxonomy, annotations):
 #  Training
 ############################################################
 
-def run_main(command, weights, campaignId, taxonomy, annotations, dataset=None, image=None, video=None, subset=None, logs=DEFAULT_LOGS_DIR):
+def train_main(command, weights, campaignId, taxonomy, annotations, dataset=None, image=None, video=None, subset=None, logs=DEFAULT_LOGS_DIR):
     # Parse command line arguments
     '''
     parser = argparse.ArgumentParser(
@@ -529,14 +529,8 @@ def run_main(command, weights, campaignId, taxonomy, annotations, dataset=None, 
         if not os.path.exists(weights_path):
             utils.download_trained_weights(weights_path)
     elif weights.lower() == "last":
-        # Continue training previous model
-        try:
-            weights_path = os.path.join(ROOT_DIR, campaignId + ".h5")
-        except:
-            print('No previous model with this campaignId. Training from pretrained COCO model.')
-            weights_path = COCO_WEIGHTS_PATH
         # Find last trained weights
-        #weights_path = model.find_last()[1]
+        weights_path = model.find_last()[1]
     elif weights.lower() == "imagenet":
         # Start from ImageNet trained weights
         weights_path = model.get_imagenet_weights()
