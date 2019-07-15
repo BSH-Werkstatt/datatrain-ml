@@ -70,7 +70,7 @@ class SurgeryConfig(Config):
     IMAGES_PER_GPU = 1
 
     # Number of training steps per epoch
-    STEPS_PER_EPOCH = 100 #100
+    STEPS_PER_EPOCH = 10 #100
 
     # Skip detections with < 90% confidence
     DETECTION_MIN_CONFIDENCE = 0.9
