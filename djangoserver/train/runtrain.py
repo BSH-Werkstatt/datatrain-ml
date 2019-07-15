@@ -70,7 +70,7 @@ class SurgeryConfig(Config):
     IMAGES_PER_GPU = 1
 
     # Number of training steps per epoch
-    STEPS_PER_EPOCH = 10 #100
+    STEPS_PER_EPOCH = 100 #100
 
     # Skip detections with < 90% confidence
     DETECTION_MIN_CONFIDENCE = 0.9
@@ -265,7 +265,7 @@ def train(model, dataset, campaignId, taxonomy, annotationsTrain, annotationsVal
     print("Training network heads")
     model.train(dataset_train, dataset_val,
                 config.LEARNING_RATE, #learning_rate
-                2, #60 epochs
+                5, #60 epochs
                 'heads', #layers
                 campaignId, 
                 taxonomy) 

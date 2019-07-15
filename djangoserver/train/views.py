@@ -9,7 +9,8 @@ from django.views.decorators.csrf import csrf_exempt
 
 from . import runtrain
 import model_setup as m
-
+import shutil
+import os
 from threading import Thread
 
 threads = []
@@ -27,7 +28,7 @@ def train(request):
 
         result = requests.get(campaignInfoUrl)
         imagesInfo = json.loads(result.text)
-		
+
         print('Image samples: ', len(
             [a for a in imagesInfo if a['annotations']]))
 
@@ -44,3 +45,6 @@ def train(request):
 def start_train_thread(cmd, base_model, campaignId, classes, imagesInfo, campaign_link):
     runtrain.train_main(cmd, base_model, campaignId,
                         classes, imagesInfo, campaign_link)
+
+    campaign_dir = os.getcwd() + '/campaigns/' + campaignId + '/'
+    shutil.rmtree(campaign_dir)
