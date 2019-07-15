@@ -24,7 +24,7 @@ def train(request):
 
         classes = body['taxonomy']
         campaignId = body['campaignId']
-        campaignInfoUrl = 'http://api.datatrain.rocks/campaigns/' + campaignId + '/images'
+        campaignInfoUrl = 'http://datatrain-api-736295320.eu-central-1.elb.amazonaws.com/campaigns/' + campaignId + '/images'
 
         result = requests.get(campaignInfoUrl)
         imagesInfo = json.loads(result.text)
@@ -32,7 +32,7 @@ def train(request):
         print('Image samples: ', len(
             [a for a in imagesInfo if a['annotations']]))
 
-        campaign_link = 'http://api.datatrain.rocks/campaigns/' + campaignId + '/'
+        campaign_link = 'http://datatrain-api-736295320.eu-central-1.elb.amazonaws.com/campaigns/' + campaignId + '/'
         t = Thread(target=start_train_thread, args=('train', 'coco',
                                                     campaignId, classes, imagesInfo, campaign_link, ))
         threads.append(t)
