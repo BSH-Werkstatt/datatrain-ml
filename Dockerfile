@@ -1,5 +1,9 @@
 FROM tensorflow/tensorflow:latest-gpu-py3
 
+RUN  apt-get update \
+  && apt-get install -y wget \
+  && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /usr/src/app
 
 COPY requirements.txt ./
