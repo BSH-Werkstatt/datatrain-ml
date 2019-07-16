@@ -11,9 +11,9 @@ from . import runtrain
 import model_setup as m
 import shutil
 import os
-from threading import Thread
+from multiprocessing import Process, Queue
 
-threads = []
+processes = []
 
 
 @csrf_exempt  # avoid cookies check in Postman
@@ -33,18 +33,22 @@ def train(request):
             [a for a in imagesInfo if a['annotations']]))
 
         campaign_link = 'http://datatrain-api-736295320.eu-central-1.elb.amazonaws.com/campaigns/' + campaignId + '/'
-        t = Thread(target=start_train_thread, args=('train', 'coco',
+        p = Process(target=start_train_process, args=('train', 'coco',
                                                     campaignId, classes, imagesInfo, campaign_link, ))
-        threads.append(t)
-        print("---THREAD COUNT:" + str(len(threads)) + "---")
-        t.start()
+        processes.append(p)
+        print("---PROCESS COUNT:" + str(len(processes)) + "---")
+        p.start()
 
-        return JsonResponse({'training': 1, 'thread_name': t.getName()})
+        return JsonResponse({'training': 1, 'process_name': p.name})
 
 
-def start_train_thread(cmd, base_model, campaignId, classes, imagesInfo, campaign_link):
+def start_train_process(cmd, base_model, campaignId, classes, imagesInfo, campaign_link):
     runtrain.train_main(cmd, base_model, campaignId,
                         classes, imagesInfo, campaign_link)
 
+    # remove downloaded images
     campaign_dir = os.getcwd() + '/campaigns/' + campaignId + '/'
     shutil.rmtree(campaign_dir)
+    
+    # end process
+    exit(1)
