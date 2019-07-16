@@ -2332,25 +2332,75 @@ class MaskRCNN():
                 self.headers = headers
                 self.send_as_json = send_as_json
 
+                self.currentEpoch = 1
+
             def on_epoch_end(self, epoch, logs=None):
                 if requests is None:
                     raise ImportError('RemoteMonitor requires '
                               'the `requests` library.')
                 logs['finished'] = False
                 logs = logs or {}
-                send = {}
-                send['epoch'] = epoch
-                for k, v in logs.items():
-                    if isinstance(v, (np.ndarray, np.generic)):
-                        send[k] = v.item()
-                    else:
-                        send[k] = v
+                message['currentEpoch'] = self.currentEpoch
+                message['currentStep'] = batch
+                message['finished'] = True
+                message['metric'] = '\nEpoch ' + epoch + ' finished.\n'
+                self.currentEpoch = self.currentEpoch + 1
                 try:
                     if self.send_as_json:
-                        requests.put(self.root + self.path, json=send, headers=self.headers)
+                        requests.put(self.root + self.path, json=message, headers=self.headers)
                     else:
                         requests.put(self.root + self.path,
-                                    {self.field: json.dumps(send)},
+                                    {self.field: json.dumps(message)},
+                                    headers=self.headers)
+                except requests.exceptions.RequestException:
+                    warnings.warn('Warning: could not reach RemoteMonitor '
+                                'root server at ' + str(self.root))
+            def on_train_end(self, logs):
+                print('Training finished\n')
+                if requests is None:
+                    raise ImportError('RemoteMonitor requires '
+                              'the `requests` library.')
+                logs['finished'] = True
+                logs = logs or {}
+                message['currentEpoch'] = self.currentEpoch
+                message['currentStep'] = batch
+                message['finished'] = True
+                message['metric'] = '\nTraining finished.\n'
+                try:
+                    if self.send_as_json:
+                        requests.put(self.root + self.path, json=message, headers=self.headers)
+                    else:
+                        requests.put(self.root + self.path,
+                                    {self.field: json.dumps(message)},
+                                    headers=self.headers)
+                except requests.exceptions.RequestException:
+                    warnings.warn('Warning: could not reach RemoteMonitor '
+                                'root server at ' + str(self.root))
+            def on_batch_end(self, batch, logs=None):
+                if requests is None:
+                    raise ImportError('RemoteMonitor requires '
+                              'the `requests` library.')
+                logs = logs or {}
+                message = dict()
+                message['currentEpoch'] = self.currentEpoch
+                message['currentStep'] = batch
+                message['finished'] = False
+                message['metric'] = 'Metrics from step ' + str(batch) + ':\nBatch size: ' + str(logs['size']) \
+                    + '\nLoss: ' + str(logs['loss']) \
+                    + '\tRegion proposal class loss: ' + str(logs['rpn_class_loss']) \
+                    + '\tRegion proposal bounding box loss: ' + str(logs['rpn_bbox_loss']) \
+                    + '\nMask R-CNN class loss: ' + str(logs['mrcnn_class_loss']) \
+                    + '\tMask R-CNN bounding box loss: ' + str(logs['mrcnn_bbox_loss']) \
+                    + '\tMask R-CNN mask loss: ' + str(logs['mrcnn_mask_loss']) + '\n'
+                try:                 
+                    if self.send_as_json:
+                        print('\npath:' + self.root + self.path,'\n')
+                        result = requests.put(self.root + self.path, json=message, headers=self.headers)
+                        print(result)
+                        print('batch: ',batch, ' logs: ', logs)
+                    else:
+                        requests.put(self.root + self.path,
+                                    {self.field: json.dumps(message)},
                                     headers=self.headers)
                 except requests.exceptions.RequestException:
                     warnings.warn('Warning: could not reach RemoteMonitor '
@@ -2365,59 +2415,10 @@ class MaskRCNN():
                 self.times.append(time.time() - self.epoch_time_start)
         time_callback = TimeHistory() #time_callback.times
 
-        class Remote(RemotePUT): #RemoteMonitor makes a POST request, we need a PUT
-            def on_train_end(self, logs):
-                print('Training finished\n')
-                if requests is None:
-                    raise ImportError('RemoteMonitor requires '
-                              'the `requests` library.')
-                logs['finished'] = True
-                logs = logs or {}
-                send = {}
-                for k, v in logs.items():
-                    if isinstance(v, (np.ndarray, np.generic)):
-                        send[k] = v.item()
-                    else:
-                        send[k] = v
-                try:
-                    if self.send_as_json:
-                        requests.put(self.root + self.path, json=send, headers=self.headers)
-                    else:
-                        requests.put(self.root + self.path,
-                                    {self.field: json.dumps(send)},
-                                    headers=self.headers)
-                except requests.exceptions.RequestException:
-                    warnings.warn('Warning: could not reach RemoteMonitor '
-                                'root server at ' + str(self.root))
-            def on_batch_end(self, batch, logs=None):
-                if requests is None:
-                    raise ImportError('RemoteMonitor requires '
-                              'the `requests` library.')
-                logs['finished'] = False
-                logs = logs or {}
-                send = {}
-                send['batch'] = batch
-                for k, v in logs.items():
-                    if isinstance(v, (np.ndarray, np.generic)):
-                        send[k] = v.item()
-                    else:
-                        send[k] = v
-                try:
-                    if self.send_as_json:
-                        requests.put(self.root + self.path, json=send, headers=self.headers)
-                    else:
-                        requests.put(self.root + self.path,
-                                    {self.field: json.dumps(send)},
-                                    headers=self.headers)
-                except requests.exceptions.RequestException:
-                    warnings.warn('Warning: could not reach RemoteMonitor '
-                                'root server at ' + str(self.root))
-
-        remote = Remote(root='https://datatrain-static.s3.amazonaws.com/train/' + campaignId, # PUT call to <root>
-                            path='.',
+        remote = RemotePUT(root='https://api.datatrain.rocks/train/active/' + campaignId, # PUT call to <root>
+                            path='',
                             send_as_json=True)
-            
-
+        
         callbacks = [
             keras.callbacks.TensorBoard(log_dir=self.log_dir,
                                         histogram_freq=0, write_graph=True, write_images=False),
