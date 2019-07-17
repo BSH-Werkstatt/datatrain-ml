@@ -2418,7 +2418,7 @@ class MaskRCNN():
                 self.times.append(time.time() - self.epoch_time_start)
         time_callback = TimeHistory() #time_callback.times
 
-        remote = RemotePUT(root='https://api.datatrain.rocks/train/active/' + campaignId, # PUT call to <root>
+        remote = RemotePUT(root='http://datatrain-api-736295320.eu-central-1.elb.amazonaws.com/train/active/' + campaignId, # PUT call to <root>
                             path='',
                             send_as_json=True)
         
