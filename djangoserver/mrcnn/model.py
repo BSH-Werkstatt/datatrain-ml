@@ -2340,10 +2340,12 @@ class MaskRCNN():
                               'the `requests` library.')
                 logs['finished'] = False
                 logs = logs or {}
+
+                message={}
                 message['currentEpoch'] = self.currentEpoch
-                message['currentStep'] = batch
+                message['currentStep'] = 0
                 message['finished'] = True
-                message['metric'] = '\nEpoch ' + epoch + ' finished.\n'
+                message['metric'] = '\nEpoch ' + str(epoch) + ' finished.\n'
                 self.currentEpoch = self.currentEpoch + 1
                 try:
                     if self.send_as_json:
@@ -2362,8 +2364,9 @@ class MaskRCNN():
                               'the `requests` library.')
                 logs['finished'] = True
                 logs = logs or {}
+
+                message = dict()
                 message['currentEpoch'] = self.currentEpoch
-                message['currentStep'] = batch
                 message['finished'] = True
                 message['metric'] = '\nTraining finished.\n'
                 try:
