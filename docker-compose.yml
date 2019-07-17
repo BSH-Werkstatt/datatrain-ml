@@ -1,4 +1,4 @@
-version: '3.7'
+version: '2.3'
 networks:
   docker-network:
 services:
@@ -8,20 +8,11 @@ services:
       dockerfile: Dockerfile
       args:
         PORT: 6000
+    runtime: nvidia
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
     ports:
       - '6000:6000'
-    links:
-      - database_dev
-    depends_on:
-      - database_dev
     networks:
       - docker-network
     command: python -u djangoserver/manage.py runserver 0.0.0.0:6000  
-  database_dev:
-    image: mongo
-    restart: always
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: init12345
-    networks:
-      - docker-network

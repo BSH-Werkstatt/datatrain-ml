@@ -1,6 +1,9 @@
 logs
 mask_rcnn*
 get_pip.py
+campaigns
+*.h5
+*.jpg
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

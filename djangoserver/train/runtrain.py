@@ -68,7 +68,7 @@ class SurgeryConfig(Config):
     # We use a GPU with 12GB memory, which can fit two images.
     # Adjust down if you use a smaller GPU.
     IMAGES_PER_GPU = 1
-
+    GPU_COUNT = 1
     # Number of training steps per epoch
     STEPS_PER_EPOCH = 100 #100
 
