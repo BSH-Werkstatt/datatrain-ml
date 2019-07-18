@@ -2386,7 +2386,7 @@ class MaskRCNN():
                 logs = logs or {}
                 message = dict()
                 message['currentEpoch'] = self.currentEpoch
-                message['currentStep'] = batch
+                message['currentStep'] = batch + 1
                 message['finished'] = False
                 message['metric'] = 'Metrics from step ' + str(batch + 1) + ':\nBatch size: ' + str(logs['size']) \
                     + '\nLoss: ' + str(logs['loss']) \
