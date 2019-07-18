@@ -2345,7 +2345,7 @@ class MaskRCNN():
                 message['currentEpoch'] = self.currentEpoch
                 message['currentStep'] = 0
                 message['finished'] = True
-                message['metric'] = '\nEpoch ' + str(epoch) + ' finished.\n'
+                message['metric'] = 'Epoch ' + str(epoch + 1) + ' finished.\n'
                 self.currentEpoch = self.currentEpoch + 1
                 try:
                     if self.send_as_json:
@@ -2368,7 +2368,7 @@ class MaskRCNN():
                 message = dict()
                 message['currentEpoch'] = self.currentEpoch
                 message['finished'] = True
-                message['metric'] = '\nTraining finished.\n'
+                message['metric'] = 'Training finished.\n'
                 try:
                     if self.send_as_json:
                         requests.put(self.root + self.path, json=message, headers=self.headers)
@@ -2388,13 +2388,13 @@ class MaskRCNN():
                 message['currentEpoch'] = self.currentEpoch
                 message['currentStep'] = batch
                 message['finished'] = False
-                message['metric'] = 'Metrics from step ' + str(batch) + ':\nBatch size: ' + str(logs['size']) \
+                message['metric'] = 'Metrics from step ' + str(batch + 1) + ':\nBatch size: ' + str(logs['size']) \
                     + '\nLoss: ' + str(logs['loss']) \
-                    + '\tRegion proposal class loss: ' + str(logs['rpn_class_loss']) \
-                    + '\tRegion proposal bounding box loss: ' + str(logs['rpn_bbox_loss']) \
+                    + '\nRegion proposal class loss: ' + str(logs['rpn_class_loss']) \
+                    + '\nRegion proposal bounding box loss: ' + str(logs['rpn_bbox_loss']) \
                     + '\nMask R-CNN class loss: ' + str(logs['mrcnn_class_loss']) \
-                    + '\tMask R-CNN bounding box loss: ' + str(logs['mrcnn_bbox_loss']) \
-                    + '\tMask R-CNN mask loss: ' + str(logs['mrcnn_mask_loss']) + '\n'
+                    + '\ntMask R-CNN bounding box loss: ' + str(logs['mrcnn_bbox_loss']) \
+                    + '\nMask R-CNN mask loss: ' + str(logs['mrcnn_mask_loss']) + '\n'
                 try:                 
                     if self.send_as_json:
                         print('\npath:' + self.root + self.path,'\n')
