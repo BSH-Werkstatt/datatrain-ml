@@ -25,7 +25,7 @@ def define_model(model = None, class_names = None):
 	K.clear_session()
 
 	if Path(model).exists() == False:
-		model = 'mask_rcnn_coco.h5'
+		model = './djangoserver/mask_rcnn_coco.h5'
 		# define 81 classes that the coco model knowns about
 		class_names = ['BG', 'person', 'bicycle', 'car', 'motorcycle', 'airplane',
 				'bus', 'train', 'truck', 'boat', 'traffic light',
@@ -42,8 +42,7 @@ def define_model(model = None, class_names = None):
 				'keyboard', 'cell phone', 'microwave', 'oven', 'toaster',
 				'sink', 'refrigerator', 'book', 'clock', 'vase', 'scissors',
 				'teddy bear', 'hair drier', 'toothbrush']
-
-	rcnn = MaskRCNN(mode='inference', model_dir='./', config=TestConfig(class_names))
+	rcnn = MaskRCNN(mode='inference', config=TestConfig(class_names), model_dir='./djangoserver/')
 	rcnn.load_weights(model, by_name=True)
 
 	return rcnn, class_names
