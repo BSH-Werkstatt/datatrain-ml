@@ -21,7 +21,7 @@ def predict(request):
 		urlTrack = request.build_absolute_uri() # URL where request was sent
 		filename = urlTrack + randomName # assign random filename to image 
 
-		p = Process(target=predict_process, args=(request, randomName, ))
+		p = Process(target=predict_process, args=(request, filename, ))
 		processes.append(p)
 		print("---PROCESS COUNT:" + str(len(processes)) + "---")
 
@@ -32,7 +32,6 @@ def predict(request):
 		
 		return JsonResponse({'predictionURL': filename})
 
-
 def predict_process(request, randomName):
 	body = json.loads(request.body)
 	url = body['imageURL']
@@ -41,7 +40,6 @@ def predict_process(request, randomName):
 	campaign_class_names = ['BG']
 	for class_name in body['campaignTaxonomy']:
 		campaign_class_names.append(class_name)
-
 	rcnn, class_names = m.define_model(model_name, campaign_class_names)
 	prediction, image = m.predict_img(url, rcnn)
 	m.visualize(prediction, image, class_names, randomName)

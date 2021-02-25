@@ -4,12 +4,16 @@ import os
 import urllib
 import pprint
 
-username = urllib.parse.quote_plus('root')
-password = urllib.parse.quote_plus('init12345')
+username = "db_username"
+password = "db_password"
+db_name = "db_name"
+host = "localhost"
+port = "27017"
 
-client = MongoClient('mongodb://%s:%s@database_dev:27017/' % (username, password))
+client = MongoClient('mongodb://%s:%s@%s:%s/%s' % (username, password, host, port, db_name))
 
-db = client["data-train"]
+
+db = client["datatrain"]
 
 images = db["images"]
 campaigns = db["campaigns"]

@@ -1,6 +1,6 @@
-# Mask R-CNN for Surgery Robot 
+# Datatrain Machine Learning
 
-This is a project of NUS Control & Mechatronics Lab for surgical robot target detection and segmentation under guidance of Prof. Chui Chee Kong. Information on the research group can be found in http://blog.nus.edu.sg/mpecck/.
+This is a cloned project of NUS Control & Mechatronics Lab for surgical robot target detection and segmentation under guidance of Prof. Chui Chee Kong. Information on the research group can be found in http://blog.nus.edu.sg/mpecck/.
 
 The codes are based on implementation of [Mask R-CNN](https://arxiv.org/abs/1703.06870) by (https://github.com/matterport/Mask_RCNN) on Python 3, Keras, and TensorFlow. The model generates bounding boxes and segmentation masks for each instance of an object in the image. It's based on Feature Pyramid Network (FPN) and a ResNet101 backbone. 
 
@@ -78,15 +78,18 @@ The model is trained based on pre-trained weights for MS COCO.
 # Configurations
 Anaconda + Python 3.6.4, TensorFlow 1.7.0, Keras 2.1.5, CUDA 9.0, cudnn 7 and other common packages listed in `requirements.txt`.
 
-# Installation
-1. Install dependencies
-   ```bash
-   pip install -r requirements.txt
-   ```
-2. Clone this repository
-3. Run setup from the repository root directory
-    ```bash
-    python setup.py install
-    ``` 
-3. The code will automatically download pretrained COCO weights when you select training with COCO weights. But in case it somehow doesn't work, download pre-trained COCO weights (mask_rcnn_coco.h5) from the [releases page](https://github.com/matterport/Mask_RCNN/releases).
+## Installation
 
+Install all dependencies from the `requirements.txt` with `pip install -r requirements.txt`
+
+Run setup from the repository root directory with `python setup.py install`
+
+The code will automatically download pretrained COCO weights when you select training with COCO weights. But in case it somehow doesn't work, download pre-trained COCO weights (mask_rcnn_coco.h5) from the [releases page](https://github.com/matterport/Mask_RCNN/releases).
+
+## Running the project
+
+Change relevant lines on `./djangoserver/train/views.py` for connection between server side.
+
+- Change relevant lines on `use_sample_db.py` for connection between database.
+
+Run `python manage.py runserver` from `./djangoserver/`directory.

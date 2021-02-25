@@ -17,14 +17,14 @@ processes = []
 
 
 @csrf_exempt  # avoid cookies check in Postman
-def train(request):
+def train(request): 
 
     if request.method == 'POST':
         body = json.loads(request.body)
 
         classes = body['taxonomy']
         campaignId = body['campaignId']
-        campaignInfoUrl = 'http://datatrain-api-736295320.eu-central-1.elb.amazonaws.com/campaigns/' + campaignId + '/images'
+        campaignInfoUrl = 'http://api.url:port/campaigns/' + campaignId + '/images'
 
         result = requests.get(campaignInfoUrl)
         imagesInfo = json.loads(result.text)
@@ -32,7 +32,7 @@ def train(request):
         print('Image samples: ', len(
             [a for a in imagesInfo if a['annotations']]))
 
-        campaign_link = 'http://datatrain-api-736295320.eu-central-1.elb.amazonaws.com/campaigns/' + campaignId + '/'
+        campaign_link = 'http://api.url:port/campaigns/' + campaignId + '/'
         p = Process(target=start_train_process, args=('train', 'coco',
                                                     campaignId, classes, imagesInfo, campaign_link, ))
         processes.append(p)
